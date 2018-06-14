@@ -1,6 +1,8 @@
 const words = require('an-array-of-english-words');
 var Discord = require('discord.io');
 
+var cipher  
+
 var wordsworth = new Discord.Client({
     token: "",
     autorun: true
@@ -28,4 +30,8 @@ wordsworth.on('message', function(user, userID, channelID, message, event) {
             }
         }
     }
+});
+// event emitted whenever user joins
+wordsworth.on('guildMemberAdd', function(member) {
+
 });
