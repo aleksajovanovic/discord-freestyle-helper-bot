@@ -31,6 +31,7 @@ wordsworth.on('message', function(user, userID, channelID, message, event) {
         }
     }
 });
+
 // event emitted whenever user joins
 wordsworth.on('guildMemberAdd', function(member) {
 
