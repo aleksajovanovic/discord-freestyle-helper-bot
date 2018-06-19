@@ -1,4 +1,5 @@
 var assert = require("chai").assert
+var expect = require("chai").expect
 var CircularList = require('../lib/circularlist')
 var circularlist
 
@@ -22,7 +23,7 @@ describe("Base circular list tests", function () {
         })
     })
 
-    describe("Testing basic operations", function () {
+    describe("Testing push and pop", function () {
         it("Testing push", function () {
             circularlist.push("junk")
             assert.equal(circularlist.head, "junk", "Head should be \"junk\"")
@@ -103,7 +104,7 @@ describe("Base circular list tests", function () {
         })
     })
 
-    describe("Testing set", function () {
+    describe("Testing set and get", function () {
         it("Single set", function () {
             circularlist.push("junk")
             circularlist.push("hippopotamus")
@@ -127,14 +128,70 @@ describe("Base circular list tests", function () {
             assert.equal(circularlist.size, 3, "Size should be 3")
             assert.equal(circularlist.iterator, "wharf", "Iterator should be \"wharf\"")
         })
-        //TODO: implement get for circularlist
-        // it("get", function () {
-        //     circularlist.push("junk")
-        //     circularlist.push("hippopotamus")
-        //     circularlist.push("tyrannosaurus")
+        it("get", function () {
+            circularlist.push("junk")
+            circularlist.push("hippopotamus")
+            circularlist.push("tyrannosaurus")
 
-        //     circularlist.get(0, "wharf")
-           
-        // })
+            assert.equal(circularlist.get(2), "tyrannosaurus", "get should return \"tyrannosaurus\"")
+            assert.equal(circularlist.get(0), "junk", "get should return \"junk\"")
+            assert.throw(function () { circularlist.get(-1); }, Error, 'Index "-1" out of bounds')
+        })
+    })
+
+    describe("Testing insert and remove", function () {
+        it("insert", function () {
+            circularlist.push("junk")
+            circularlist.push("hippopotamus")
+            circularlist.push("tyrannosaurus")
+
+            circularlist.insert(0, "jiminy")
+            assert.equal(circularlist.head, "jiminy", "Head should be \"jiminy\"")
+            assert.equal(circularlist.tail, "tyrannosaurus", "Tail should be \"tyrannosaurus\"")
+            assert.equal(circularlist.size, 4, "Size should be 4")
+            assert.equal(circularlist.iterator, "junk", "Iterator should be \"junk\"")
+
+            circularlist.insert(3, "physical")
+            assert.equal(circularlist.head, "jiminy", "Head should be \"jiminy\"")
+            assert.equal(circularlist.tail, "tyrannosaurus", "Tail should be \"tyrannosaurus\"")
+            assert.equal(circularlist.size, 5, "Size should be 5")
+            assert.equal(circularlist.iterator, "junk", "Iterator should be \"junk\"")
+        })
+        it("remove", function () {
+            circularlist.push("junk")
+            circularlist.push("hippopotamus")
+            circularlist.push("tyrannosaurus")
+            circularlist.push("meager")
+            circularlist.push("ubiquitous")
+            circularlist.push("gerrymander")
+
+            circularlist.remove(5)
+            circularlist.remove(1)
+            circularlist.remove(0)
+            assert.equal(circularlist.head, "tyrannosaurus", "Head should be \"tyrannosaurus\"")
+            assert.equal(circularlist.tail, "ubiquitous", "Tail should be \"ubiquitous\"")
+            assert.equal(circularlist.size, 3, "Size should be 3")
+            assert.equal(circularlist.iterator, "tyrannosaurus", "Iterator should be \"tyrannosaurus\"")
+        })
+        it("remove at iterator", function () {
+            circularlist.push("junk")
+            circularlist.push("hippopotamus")
+            circularlist.push("tyrannosaurus")
+            circularlist.push("meager")
+            circularlist.push("ubiquitous")
+            circularlist.push("gerrymander")
+
+            circularlist.removeAtIterator()
+            circularlist.next()
+            circularlist.next()
+            circularlist.next()
+            circularlist.next()
+            circularlist.removeAtIterator()
+
+            assert.equal(circularlist.head, "hippopotamus", "Head should be \"hippopotamus\"")
+            assert.equal(circularlist.tail, "ubiquitous", "Tail should be \"ubiquitous\"")
+            assert.equal(circularlist.size, 4, "Size should be 4")
+            assert.equal(circularlist.iterator, "hippopotamus", "Iterator should be \"hippopotamus\"")
+        })
     })
 })
