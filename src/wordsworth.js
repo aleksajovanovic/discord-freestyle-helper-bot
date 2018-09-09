@@ -1,10 +1,12 @@
-const words = require('an-array-of-english-words');
-var Discord = require('discord.io');
+const words = require('an-array-of-english-words')
+var Discord = require('discord.io')
+var CircularList = require('../lib/circularlist')
 
-var cipher  
+var cipher = new CircularList()
+var participants = []
 
 var wordsworth = new Discord.Client({
-    token: "",
+    token: "NDU1MDA5NDQ1MzgzMjQxNzI4.DgwXeg.GKrKt3IQaiwUuqUF0B-jtvXAny8",
     autorun: true
 });
 
@@ -13,21 +15,47 @@ wordsworth.on('ready', function() {
 });
 
 wordsworth.on('message', function(user, userID, channelID, message, event) {
-    if (message === "ping") {
-        wordsworth.sendMessage({
-            to: channelID,
-            message: "pong"
-        });
-    }
-    if(message.substring(0,1) == '!') {
-        var args = message.substring(1).split(' ');
+    if(message.substring(0,3) == 'ww ') {
+        var command = message.substring(3)
 
-        while(args.length > 0) {
-            var command = args.shift();
+        switch (command) {
+            case 'hello':
+            break
 
-            switch(command) {
-              
-            }
+            case 'start': 
+                wordsworth.sendMessage({
+                    to: channelID,
+                    message: "starting the cipher"
+                });
+            break
+
+            case 'join':
+                var user = {'user': user, 'userID': userID, 'index': cipher.size()}
+                participants[userID] = cipher.size()
+                cipher.push(user)
+            break
+
+            case 'leave':
+                var user = {'user': user, 'userID': userID, 'index': cipher.size()}
+                var reachedUserToRemove = false
+
+                for(var key in participants) {
+                    if(reachedUserToRemove) {
+                        --participants[key]
+                    }
+                    if(key === userID) {
+                        reachedUserToRemove = true
+                    }
+                }
+
+                var index = participants[userID]
+                cipher.remove(index)
+            case 'end':
+                
+            break 
+
+            break
+
         }
     }
 });
@@ -36,3 +64,7 @@ wordsworth.on('message', function(user, userID, channelID, message, event) {
 wordsworth.on('guildMemberAdd', function(member) {
 
 });
+
+function startCipher() {
+
+}
