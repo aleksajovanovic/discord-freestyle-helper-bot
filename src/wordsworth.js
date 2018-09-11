@@ -69,15 +69,12 @@ wordsworth.on('guildMemberAdd', function(member) {
 
 });
 
-function startCipher(channelID) {
+async function startCipher(channelID) {
     var cipherWords = generateFiveWords(channelID)
-    console.log(cipherWords.length)
-    for (var i = 0; i < 5; i++) {
-        wordsworth.sendMessage({
-            to: channelID,
-            message: cipherWords[i]
-        });
-    }
+    wordsworth.sendMessage({
+      to: channelID,
+      message: cipherWords[0] + '\n' + cipherWords[1] + '\n' + cipherWords[2] + '\n' + cipherWords[3] + '\n' + cipherWords[4]
+    });
 }
 
 function generateFiveWords(channelID) {
@@ -118,7 +115,7 @@ async function countdownCipherStart(channelID) {
         to: channelID,
         message: "1"
     });
-    await sleep(500)
+    await sleep(1000)
 }
 
 function sleep(ms) {
