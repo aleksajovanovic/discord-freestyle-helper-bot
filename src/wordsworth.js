@@ -34,8 +34,12 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
 
             case 'join':
                 var user = {'user': user, 'userID': userID, 'index': cipher.size}
-                cipherIndexes[userID] = cipher.size
                 cipher.push(user)
+                cipherIndexes[userID] = cipher.size
+                wordsworth.sendMessage({
+                    to: channelID,
+                    message: user.user + ', your position in the cipher is ' + cipher.size
+                });
             break
 
             case 'leave':
@@ -104,7 +108,7 @@ async function countdownCipherStart(channelID) {
         to: channelID,
         message: "starting the cipher"
     });
-    await sleep(3000)
+    await sleep(1000)
     wordsworth.sendMessage({
         to: channelID,
         message: "3"
