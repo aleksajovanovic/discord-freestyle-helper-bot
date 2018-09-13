@@ -33,13 +33,13 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
             break
 
             case 'join':
-                var user = {'user': user, 'userID': userID, 'index': cipher.size()}
-                cipherIndexes[userID] = cipher.size()
+                var user = {'user': user, 'userID': userID, 'index': cipher.size}
+                cipherIndexes[userID] = cipher.size
                 cipher.push(user)
             break
 
             case 'leave':
-                var user = {'user': user, 'userID': userID, 'index': cipher.size()}
+                var user = {'user': user, 'userID': userID, 'index': cipher.size}
                 var reachedUserToRemove = false
 
                 for (var key in cipherIndexes) {
@@ -57,9 +57,6 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
             case 'end':
                 
             break 
-
-            break
-
         }
     }
 });
@@ -70,10 +67,17 @@ wordsworth.on('guildMemberAdd', function(member) {
 });
 
 async function startCipher(channelID) {
+    announceNext(channelID, cipher.get(0).user)
+}
+
+async function announceNext(channelID, user) {
     var cipherWords = generateFiveWords(channelID)
+
     wordsworth.sendMessage({
-      to: channelID,
-      message: cipherWords[0] + '\n' + cipherWords[1] + '\n' + cipherWords[2] + '\n' + cipherWords[3] + '\n' + cipherWords[4]
+        to: channelID,
+        message: user + ', you\'re up next. Get ready.\n\n Here are your words:\n\n' 
+        + cipherWords[0] + ', ' + cipherWords[1] + ',\n' + cipherWords[2] + ', ' 
+        + cipherWords[3] + ',\n' + cipherWords[4]
     });
 }
 
@@ -113,7 +117,7 @@ async function countdownCipherStart(channelID) {
     await sleep(1000)
     wordsworth.sendMessage({
         to: channelID,
-        message: "1"
+        message: "1\n"
     });
     await sleep(1000)
 }
