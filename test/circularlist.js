@@ -139,6 +139,51 @@ describe("Base circular list tests", function () {
         })
     })
 
+    describe("Testing exists", function () {
+        it("Empty list", function () {
+            user = {"user":"TuNa","userID":"427124183852515347","index":0}
+            exists = circularlist.exists(user)
+            assert.equal(exists, false, "exists should return false")
+        })
+
+        it("List of one where obj does exist", function () {
+            user = {"user":"TuNa","userID":"427124183852515347","index":0}
+            circularlist.push(user)
+            exists = circularlist.exists(user)
+            assert.equal(exists, true, "exists should return true")
+        })
+
+        it("List of one where obj does not exist", function () {
+            user1 = {"user":"TuNa","userID":"427124183852515347","index":0}
+            user2 = {"user":"Charles","userID":"427124183852518999","index":0}
+            circularlist.push(user2)
+            exists = circularlist.exists(user1)
+            assert.equal(exists, false, "exists should return false")
+        })
+
+        it("List of multiple where obj does exist", function () {
+            user1 = {"user":"TuNa","userID":"427124183852515347","index":0}
+            user2 = {"user":"Charles","userID":"427124183852518999","index":0}
+            user3 = {"user":"Charles","userID":"427124183852518988","index":0}
+            circularlist.push(user2)
+            circularlist.push(user3)
+            circularlist.push(user1)
+            exists = circularlist.exists(user1)
+            assert.equal(exists, true, "exists should return true")
+        })
+
+        it("List of multiple where obj does not exist", function () {
+            user1 = {"user":"TuNa","userID":"427124183852515347","index":0}
+            user2 = {"user":"Charles","userID":"427124183852518999","index":0}
+            user3 = {"user":"Charles","userID":"427124183852518988","index":0}
+            circularlist.push(user2)
+            circularlist.push(user3)
+            exists = circularlist.exists(user1)
+            assert.equal(exists, false, "exists should return false")
+        })
+
+    })
+
     describe("Testing insert and remove", function () {
         it("insert", function () {
             circularlist.push("junk")

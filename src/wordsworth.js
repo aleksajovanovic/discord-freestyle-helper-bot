@@ -20,6 +20,13 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
         var command = message.substring(3)
 
         switch (command) {
+            case 'helena says hi':
+                wordsworth.sendMessage({
+                    to: channelID,
+                    message: ";)"
+                });
+            break
+
             case 'hello':
                 wordsworth.sendMessage({
                     to: channelID,
@@ -33,7 +40,18 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
             break
 
             case 'join':
+
                 var user = {'user': user, 'userID': userID, 'index': cipher.size}
+                userId = user['userID']
+
+                if (cipher.exists(user)) {
+                    wordsworth.sendMessage({
+                        to: channelID,
+                        message: user.user + ', you are already in the cipher'
+                    });
+                    break
+                }
+
                 cipher.push(user)
                 cipherIndexes[userID] = cipher.size
                 wordsworth.sendMessage({
@@ -57,8 +75,10 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
 
                 var index = cipherIndexes[userID]
                 cipher.remove(index)
+            break
 
-            case 'end':
+            case 'end': 
+                cipher = new CircularList()
                 
             break 
         }
