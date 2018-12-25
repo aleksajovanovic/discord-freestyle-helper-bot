@@ -1,13 +1,14 @@
 const words = require('an-array-of-english-words')
 var Discord = require('discord.io')
 var CircularList = require('../lib/circularlist')
+var Constants = require('../auth/auth')
 
 var cipher = new CircularList()
 var cipherIndexes = []
-
+console.log(Constants.DISCORD_SECRET)
 
 var wordsworth = new Discord.Client({
-    token: "NDU1MDA5NDQ1MzgzMjQxNzI4.DgwXeg.GKrKt3IQaiwUuqUF0B-jtvXAny8",
+    token: Constants.DISCORD_SECRET,
     autorun: true
 });
 
@@ -68,6 +69,7 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
                     if(reachedUserToRemove) {
                         --cipherIndexes[key]
                     }
+
                     if(key === userID) {
                         reachedUserToRemove = true
                     }
