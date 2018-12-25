@@ -5,7 +5,6 @@ var Constants = require('../auth/auth')
 
 var cipher = new CircularList()
 var cipherIndexes = []
-console.log(Constants.DISCORD_SECRET)
 
 var wordsworth = new Discord.Client({
     token: Constants.DISCORD_SECRET,
@@ -28,10 +27,18 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
                 });
             break
 
-            case 'hello':
+            case 'print':
+                var listAsString = ''
+                var index = 0
+                while (index < cipher.size) {
+                    var dataUser = cipher.get(index)['user']
+                    listAsString += dataUser + ', '
+                    index++
+                }
+
                 wordsworth.sendMessage({
                     to: channelID,
-                    message: words.length
+                    message: listAsString
                 });
             break
 
@@ -54,7 +61,7 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
                 }
 
                 cipher.push(user)
-                cipherIndexes[userID] = cipher.size
+                cipherIndexes[userID] = cipher.size - 1
                 wordsworth.sendMessage({
                     to: channelID,
                     message: user.user + ', your position in the cipher is ' + cipher.size
