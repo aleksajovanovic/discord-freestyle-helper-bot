@@ -6,16 +6,18 @@ var Constants = require('../auth/auth')
 var cipher = new CircularList()
 var cipherIndexes = []
 
+const TIME_PER_TURN = 5000
+
 var wordsworth = new Discord.Client({
     token: Constants.DISCORD_SECRET,
     autorun: true
 });
 
-wordsworth.on('ready', function() {
+wordsworth.on('ready', () => {
     console.log('Logged in as %s - %s\n', wordsworth.username, wordsworth.id);
 });
 
-wordsworth.on('message', async function(user, userID, channelID, message, event) {
+wordsworth.on('message', async (user, userID, channelID, message, event) => {
     if (message.substring(0,3) == 'ww ') {
         var command = message.substring(3)
 
@@ -43,8 +45,11 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
             break
 
             case 'start': 
-                await countdownCipherStart(channelID)
-                startCipher(channelID)
+                updater.start(channelID)
+            break
+
+            case 'stop':
+                updater.stop()
             break
 
             case 'join':
@@ -86,6 +91,14 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
                 cipher.remove(index)
             break
 
+            case 'rot':
+                cipher.rotate()
+            break
+            
+            case 'unrot':
+                cipher.unrotate()
+            break
+            
             case 'end': 
                 cipher = new CircularList()
                 
@@ -95,13 +108,40 @@ wordsworth.on('message', async function(user, userID, channelID, message, event)
 });
 
 // event emitted whenever user joins
-wordsworth.on('guildMemberAdd', function(member) {
+wordsworth.on('guildMemberAdd', (member) => {
 
 });
 
-async function startCipher(channelID) {
-    announceNext(channelID, cipher.get(0).user)
-}
+const updater =  (() => {
+    let timer = null
+
+    let update = (channelID) => {
+        announceNext(channelID, cipher.next().user)
+
+        timer = setInterval(async () => {
+            if (timer !== null) {
+                announceNext(channelID, cipher.next().user)
+            }
+        }, TIME_PER_TURN)
+    }
+
+    let start = async (channelID) => {
+        if (timer === null) {
+            await countdownCipherStart(channelID)
+            update(channelID)
+        }
+    }
+
+    let stop = () => {
+        clearInterval(timer)
+        timer = null
+        cipher.resetIterator()
+    }
+
+    return {
+        start, stop
+    }
+})()
 
 async function announceNext(channelID, user) {
     var cipherWords = generateFiveWords(channelID)
@@ -109,8 +149,8 @@ async function announceNext(channelID, user) {
     wordsworth.sendMessage({
         to: channelID,
         message: user + ', you\'re up next. Get ready.\n\n Here are your words:\n\n' 
-        + cipherWords[0] + ', ' + cipherWords[1] + ',\n' + cipherWords[2] + ', ' 
-        + cipherWords[3] + ',\n' + cipherWords[4]
+        + cipherWords[0] + '\n' + cipherWords[1] + '\n' + cipherWords[2] + '\n' 
+        + cipherWords[3] + '\n' + cipherWords[4] + '\n' + '------------------'
     });
 }
 
@@ -118,7 +158,7 @@ function generateFiveWords(channelID) {
     var fiveWords = []
     var wordsUsed = []
 
-    for (var i = 0; i < 5; i++) {  
+    for (var i = 0; i < 5; i++) {
         var rand
         do {
             rand = Math.floor(Math.random() * (words.length))
@@ -150,7 +190,7 @@ async function countdownCipherStart(channelID) {
     await sleep(1000)
     wordsworth.sendMessage({
         to: channelID,
-        message: "1\n"
+        message: "1\n------------------"
     });
     await sleep(1000)
 }
