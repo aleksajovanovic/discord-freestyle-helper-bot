@@ -25,12 +25,13 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             case 'helena says hi':
                 wordsworth.sendMessage({
                     to: channelID,
-                    message: ";)"
+                    message: ">:)"
                 });
             break
 
             case 'help':
-            message = 'ww print      prints the participants in the cipher\nww start      starts the cipher\nww stop       stops the cipher\nww end        disbands the cipher\nww join        join the cipher\nww leave     leave the cipher'
+            message = 
+            'ww print          prints the participants in the cipher\nww start          starts the cipher\nww stop          stops the cipher\nww pause       pauses the cipher\nww resume    resumes the paused cipher with the current person with new words\nww end           disbands the cipher\nww join           join the cipher\nww leave        leave the cipher'
                 wordsworth.sendMessage({
                     to: channelID,
                     message: message
@@ -69,13 +70,20 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             case 'start': 
                 updater.start(channelID)
             break
-
+            
+            case 'pause': 
+                updater.pause(channelID)
+            break
+            
+            case 'resume': 
+                updater.resume(channelID)
+            break
+            
             case 'stop':
                 updater.stop()
             break
 
             case 'join':
-
                 var user = {'user': user, 'userID': userID, 'index': cipher.size}
                 userId = user['userID']
 
@@ -89,6 +97,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
 
                 cipher.push(user)
                 cipherIndexes[userID] = cipher.size - 1
+
                 wordsworth.sendMessage({
                     to: channelID,
                     message: user.user + ', your position in the cipher is ' + cipher.size
@@ -124,7 +133,6 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             case 'end': 
                 updater.stop()
                 cipher = new CircularList()
-                
             break 
         }
     }
@@ -140,11 +148,13 @@ const updater =  (() => {
     var index = 0
     var currentWords = null
     var nextWords = null
+    var paused = false
 
-    let update = (channelID) => {
+    let update = (channelID, _currentParticipant = null) => {
         currentWords = generateFiveWords()
         nextWords = generateFiveWords()
-        currentParticipant = cipher.next().user
+        currentParticipant = _currentParticipant === null ? cipher.next().user : _currentParticipant
+
         announcePreparation(channelID, currentParticipant, currentWords[index])
 
         timer = setInterval(async () => {
@@ -176,9 +186,27 @@ const updater =  (() => {
     }
 
     let start = async (channelID) => {
-        if (timer === null) {
-            await countdownCipherStart(channelID)
+        if (timer === null && !paused) {
+            await countdownCipher(channelID, 'Starting the cipher')
             update(channelID)
+        }
+    }
+    
+    let pause = async (channelID) => {
+        if (paused === false) {
+            paused = true
+            announcePause(channelID)
+            clearInterval(timer)
+            timer = null
+            index = 0
+        }
+    }
+    
+    let resume = async (channelID) => {
+        if (paused === true) {
+            paused = false
+            await countdownCipher(channelID, 'Continuing the cipher')
+            update(channelID, currentParticipant)
         }
     }
 
@@ -190,7 +218,7 @@ const updater =  (() => {
     }
 
     return {
-        start, stop
+        start, pause, resume, stop
     }
 })()
 
@@ -222,6 +250,13 @@ async function announceLastWord(channelID, word) {
     });
 }
 
+async function announcePause(channelID) {
+    wordsworth.sendMessage({
+        to: channelID,
+        message: 'The cipher has been paused...'
+    });
+}
+
 function generateFiveWords() {
     var fiveWords = []
 
@@ -239,10 +274,10 @@ function generateFiveWords() {
     return fiveWords
 }
 
-async function countdownCipherStart(channelID) {
+async function countdownCipher(channelID, msg) {
     wordsworth.sendMessage({
         to: channelID,
-        message: "starting the cipher"
+        message: msg
     });
     await sleep(1000)
     wordsworth.sendMessage({
