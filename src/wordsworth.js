@@ -29,6 +29,14 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 });
             break
 
+            case 'help':
+            message = 'ww print      prints the participants in the cipher\nww start      starts the cipher\nww stop       stops the cipher\nww end        disbands the cipher\nww join        join the cipher\nww leave     leave the cipher'
+                wordsworth.sendMessage({
+                    to: channelID,
+                    message: message
+                });
+            break
+
             case 'print':
                 var listAsString = ''
                 var index = 0
@@ -114,6 +122,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
             
             case 'end': 
+                updater.stop()
                 cipher = new CircularList()
                 
             break 
@@ -184,17 +193,6 @@ const updater =  (() => {
         start, stop
     }
 })()
-
-async function announceNext(channelID, user) {
-    var cipherWords = generateFiveWords()
-
-    wordsworth.sendMessage({
-        to: channelID,
-        message: user + ', you\'re up next. Get ready.\n\n Here are your words:\n\n' 
-        + cipherWords[0] + '\n' + cipherWords[1] + '\n' + cipherWords[2] + '\n' 
-        + cipherWords[3] + '\n' + cipherWords[4] + '\n------------------'
-    });
-}
 
 async function announceParticipant(channelID, user, word) {
     wordsworth.sendMessage({
