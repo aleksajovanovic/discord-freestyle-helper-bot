@@ -6,7 +6,7 @@ var Constants = require('../auth/auth')
 var cipher = new CircularList()
 var cipherIndexes = []
 
-const TIME_PER_TURN = 5000
+const TIME_PER_TURN = 4000
 
 var wordsworth = new Discord.Client({
     token: Constants.DISCORD_SECRET,
@@ -42,6 +42,20 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                     to: channelID,
                     message: listAsString
                 });
+            break
+
+            case 'push':
+                user1 = {'user': 'bob', 'userID': '1', 'index': 0}
+                user2 = {'user': 'daryl', 'userID': '2', 'index': 1}
+                user3 = {'user': 'craig', 'userID': '3', 'index': 2}
+                user4 = {'user': 'kimberley', 'userID': '4', 'index': 3}
+                user5 = {'user': 'juan', 'userID': '5', 'index': 4}
+
+                cipher.push(user1)
+                cipher.push(user2)
+                cipher.push(user3)
+                cipher.push(user4)
+                cipher.push(user5)
             break
 
             case 'start': 
@@ -114,13 +128,40 @@ wordsworth.on('guildMemberAdd', (member) => {
 
 const updater =  (() => {
     let timer = null
+    var index = 0
+    var currentWords = null
+    var nextWords = null
 
     let update = (channelID) => {
-        announceNext(channelID, cipher.next().user)
+        currentWords = generateFiveWords()
+        nextWords = generateFiveWords()
+        currentParticipant = cipher.next().user
+        announcePreparation(channelID, currentParticipant, currentWords[index])
 
         timer = setInterval(async () => {
             if (timer !== null) {
-                announceNext(channelID, cipher.next().user)
+
+                if (index === 0) {
+                    announceParticipant(channelID, currentParticipant, currentWords[0])
+                }
+                else if (index === 4) {
+                    announceLastWord(channelID, currentWords[index])
+
+                    await sleep(1000)
+
+                    currentParticipant = cipher.next().user
+                    
+                    announcePreparation(channelID, currentParticipant, nextWords[0])
+
+                    currentWords = nextWords
+                    nextWords = generateFiveWords()
+                    index = -1
+                }
+                else {
+                    announceWord(channelID, currentWords[index])
+                }
+
+                index++
             }
         }, TIME_PER_TURN)
     }
@@ -136,6 +177,7 @@ const updater =  (() => {
         clearInterval(timer)
         timer = null
         cipher.resetIterator()
+        index = 0
     }
 
     return {
@@ -144,29 +186,56 @@ const updater =  (() => {
 })()
 
 async function announceNext(channelID, user) {
-    var cipherWords = generateFiveWords(channelID)
+    var cipherWords = generateFiveWords()
 
     wordsworth.sendMessage({
         to: channelID,
         message: user + ', you\'re up next. Get ready.\n\n Here are your words:\n\n' 
         + cipherWords[0] + '\n' + cipherWords[1] + '\n' + cipherWords[2] + '\n' 
-        + cipherWords[3] + '\n' + cipherWords[4] + '\n' + '------------------'
+        + cipherWords[3] + '\n' + cipherWords[4] + '\n------------------'
     });
 }
 
-function generateFiveWords(channelID) {
+async function announceParticipant(channelID, user, word) {
+    wordsworth.sendMessage({
+        to: channelID,
+        message: user + ', your word was ' + word + '. Go!'
+    });
+}
+
+async function announcePreparation(channelID, user, word) {
+    wordsworth.sendMessage({
+        to: channelID,
+        message: user + ', your first word will be\n' + word + '\nStart rapping when I say so.' + '\n------------------'
+    });
+}
+
+async function announceWord(channelID, word) {
+    wordsworth.sendMessage({
+        to: channelID,
+        message: word
+    });
+}
+
+async function announceLastWord(channelID, word) {
+    wordsworth.sendMessage({
+        to: channelID,
+        message: word + '\n------------------'
+    });
+}
+
+function generateFiveWords() {
     var fiveWords = []
-    var wordsUsed = []
 
     for (var i = 0; i < 5; i++) {
         var rand
+
         do {
             rand = Math.floor(Math.random() * (words.length))
         } 
-        while (wordsUsed.includes(rand))
+        while (fiveWords.includes(words[rand]))
 
-        wordsUsed.push(rand)
-        fiveWords.push(words[rand])
+        fiveWords.push(words[rand].toUpperCase())
     }
 
     return fiveWords
