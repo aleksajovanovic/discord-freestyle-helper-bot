@@ -1,12 +1,15 @@
 const words = require('an-array-of-english-words')
 var Discord = require('discord.io')
+var fs = require('fs')
 var CircularList = require('../lib/circularlist')
 var Constants = require('../auth/auth')
 
 var cipher = new CircularList()
 var cipherIndexes = []
 
-const TIME_PER_TURN = 4000
+var authorizedUsers = []
+
+var TIME_PER_TURN = 4000
 
 var wordsworth = new Discord.Client({
     token: Constants.DISCORD_SECRET,
@@ -18,10 +21,10 @@ wordsworth.on('ready', () => {
 });
 
 wordsworth.on('message', async (user, userID, channelID, message, event) => {
-    if (message.substring(0,3) == 'ww ') {
-        var command = message.substring(3)
+    if (message.substring(0,3) === 'ww ') {
+        var command = message.substring(3).split(" ")
 
-        switch (command) {
+        switch (command[0]) {
             case 'helena says hi':
                 wordsworth.sendMessage({
                     to: channelID,
@@ -31,7 +34,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
 
             case 'help':
             message = 
-            'ww print          prints the participants in the cipher\nww start          starts the cipher\nww stop          stops the cipher\nww pause       pauses the cipher\nww resume    resumes the paused cipher with the current person with new words\nww end           disbands the cipher\nww join           join the cipher\nww leave        leave the cipher'
+            'ww print                                         prints the participants in the cipher\nww start                                         starts the cipher\nww stop                                         stops the cipher\nww pause                                      pauses the cipher\nww resume                                   resumes the paused cipher with the current person with new words\nww end                                          disbands the cipher\nww join                                          join the cipher\nww leave                                       leave the cipher\nww changetime <new time>   changes the time per word to the new time'
                 wordsworth.sendMessage({
                     to: channelID,
                     message: message
@@ -122,6 +125,28 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 cipher.remove(index)
             break
 
+            case 'changetime':
+                newTime =  parseInt(command[1], 10)
+
+                //CHECK AUTH
+
+                if (isNaN(newTime) || newTime.floor() < 2 || newTime.floor() > 100) {
+                    wordsworth.sendMessage({
+                        to: channelID,
+                        message: 'The new time must be between 2 and 100 seconds'
+                    });
+
+                    break
+                }
+
+                wordsworth.sendMessage({
+                    to: channelID,
+                    message: 'The old time was ' + TIME_PER_TURN / 1000 + ' seconds per word. The new time is ' + newTime + ' seconds per word.'
+                });
+
+                TIME_PER_TURN = newTime * 1000
+            break
+            
             case 'rot':
                 cipher.rotate()
             break
