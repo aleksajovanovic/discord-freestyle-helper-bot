@@ -10,6 +10,7 @@ var cipherIndexes = []
 var authorizedUsers = []
 
 var TIME_PER_TURN = 4000
+var WORDS_PER_PERSON = 5
 
 var wordsworth = new Discord.Client({
     token: Constants.DISCORD_SECRET,
@@ -130,7 +131,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
 
                 //CHECK AUTH
 
-                if (isNaN(newTime) || newTime.floor() < 2 || newTime.floor() > 100) {
+                if (isNaN(newTime) || newTime < 2 || newTime > 100) {
                     wordsworth.sendMessage({
                         to: channelID,
                         message: 'The new time must be between 2 and 100 seconds'
@@ -145,6 +146,30 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 });
 
                 TIME_PER_TURN = newTime * 1000
+            break
+            
+            case 'changenumwords':
+                numberOfWords =  parseInt(command[1], 10)
+
+                //CHECK AUTH
+
+                if (isNaN(numberOfWords) || numberOfWords < 1 || numberOfWords > 20) {
+                    wordsworth.sendMessage({
+                        to: channelID,
+                        message: 'The new number of words must be between 1 and 20 words'
+                    });
+
+                    break
+                }
+
+                numberOfWords = numberOfWords
+
+                wordsworth.sendMessage({
+                    to: channelID,
+                    message: 'The old words per person was ' + WORDS_PER_PERSON + '. The new words per person is ' + numberOfWords + '.'
+                });
+
+                WORDS_PER_PERSON = numberOfWords
             break
             
             case 'rot':
@@ -188,7 +213,7 @@ const updater =  (() => {
                 if (index === 0) {
                     announceParticipant(channelID, currentParticipant, currentWords[0])
                 }
-                else if (index === 4) {
+                else if (index === (WORDS_PER_PERSON -1)) {
                     announceLastWord(channelID, currentWords[index])
 
                     await sleep(1000)
@@ -285,7 +310,7 @@ async function announcePause(channelID) {
 function generateFiveWords() {
     var fiveWords = []
 
-    for (var i = 0; i < 5; i++) {
+    for (var i = 0; i < WORDS_PER_PERSON; i++) {
         var rand
 
         do {
