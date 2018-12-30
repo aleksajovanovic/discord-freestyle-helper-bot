@@ -1,16 +1,37 @@
 const words = require('an-array-of-english-words')
+const replace = require('replace-in-file');
 var Discord = require('discord.io')
-var fs = require('fs')
 var CircularList = require('../lib/circularlist')
-var dotenv = require('dotenv').config();
+require('dotenv').config();
 
 var cipher = new CircularList()
 var cipherIndexes = []
 
 var authorizedUsers = []
 
-var TIME_PER_TURN = 4000
-var WORDS_PER_PERSON = 5
+var TIME_PER_TURN = process.env.TIME_PER_TURN === 'null' ? 4000 : process.env.TIME_PER_TURN
+var WORDS_PER_PERSON = process.env.WORDS_PER_PERSON === 'null' ? 5 : process.env.WORDS_PER_PERSON
+
+const gametypes = {
+    NORMAL: 'normal',
+    ALLITERATION: 'alliteration'
+}
+
+var gametype = ''
+
+switch (process.env.GAMETYPE) {
+    case 'normal':
+        gametype = gametypes.NORMAL
+    break
+    
+    case 'alliteration':
+        gametype = gametypes.ALLITERATION
+    break
+
+    default:
+        gametype = gametypes.NORMAL
+    break
+}
 
 var wordsworth = new Discord.Client({
     token: process.env.DISCORD_SECRET_KEY,
@@ -25,7 +46,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
     if (message.substring(0,3) === 'ww ') {
         var command = message.substring(3).split(" ")
 
-        switch (command[0]) {
+        switch (command[0]) { 
             case 'helena says hi':
                 wordsworth.sendMessage({
                     to: channelID,
@@ -172,12 +193,12 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 WORDS_PER_PERSON = numberOfWords
             break
             
-            case 'rot':
-                cipher.rotate()
+            case 'save':
+                savePresets()
             break
             
-            case 'unrot':
-                cipher.unrotate()
+            case 'showpresets':
+                showPresets(channelID)
             break
             
             case 'end': 
@@ -271,6 +292,34 @@ const updater =  (() => {
         start, pause, resume, stop
     }
 })()
+
+async function savePresets() {
+    var timeReplace = 'TIME_PER_TURN=' + TIME_PER_TURN
+    var wordReplace = 'WORDS_PER_PERSON=' + WORDS_PER_PERSON
+    var gameReplace = 'GAMETYPE=' + gametype
+    
+    const options = {
+
+        //Single file
+        files: './.env',
+      
+        //Replacement to make (string or regex) 
+        from: [/TIME_PER_TURN=[null|0-9]*/, /WORDS_PER_PERSON=[null|0-9]*/, /GAMETYPE=[null|0-9]*/],
+        to: [timeReplace, wordReplace, gameReplace],
+      };
+
+    replace(options)
+        .catch(error => {
+            console.error('Error occurred:', error);
+        });
+}
+
+async function showPresets(channelID) {
+    wordsworth.sendMessage({
+        to: channelID,
+        message: 'TIME_PER_TURN=' + TIME_PER_TURN + '\n' + 'WORDS_PER_PERSON=' + WORDS_PER_PERSON + '\n' + 'GAMETYPE=' + gametype + '\n'
+    });
+}
 
 async function announceParticipant(channelID, user, word) {
     wordsworth.sendMessage({
