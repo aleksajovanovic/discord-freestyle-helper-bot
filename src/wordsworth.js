@@ -2,7 +2,7 @@ const words = require('an-array-of-english-words')
 var Discord = require('discord.io')
 var fs = require('fs')
 var CircularList = require('../lib/circularlist')
-var Constants = require('../auth/auth')
+var dotenv = require('dotenv').config();
 
 var cipher = new CircularList()
 var cipherIndexes = []
@@ -13,7 +13,7 @@ var TIME_PER_TURN = 4000
 var WORDS_PER_PERSON = 5
 
 var wordsworth = new Discord.Client({
-    token: Constants.DISCORD_SECRET,
+    token: process.env.DISCORD_SECRET_KEY,
     autorun: true
 });
 
