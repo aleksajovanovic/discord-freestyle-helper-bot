@@ -56,8 +56,20 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
 
             case 'help':
             message = 
-            'ww print                                         prints the participants in the cipher\nww start                                         starts the cipher\nww stop                                         stops the cipher\nww pause                                      pauses the cipher\nww resume                                   resumes the paused cipher with the current person with new words\nww end                                          disbands the cipher\nww join                                          join the cipher\nww leave                                       leave the cipher\nww changetime <new time>   changes the time per word to the new time'
-                wordsworth.sendMessage({
+            'ww print                                                                prints the participants in the cipher\n' +
+            'ww start                                                                starts the cipher\n' +
+            'ww stop                                                                stops the cipher\n' +
+            'ww pause                                                             pauses the cipher\n' +
+            'ww resume                                                          resumes the paused cipher with the current person with new words\n' +
+            'ww end                                                                 disbands the cipher\n' +
+            'ww join                                                                  join the cipher\n' +
+            'ww leave                                                               leave the cipher\n' +
+            'ww changetime <new time>                            changes the time per word to the new time\n' +
+            'ww changeword <new words per person>   change how many words each person gets\n' +
+            'ww save                                                                save your customizations\n' +
+            'ww showpresets                                                 show what your current customizations are\n'
+                
+            wordsworth.sendMessage({
                     to: channelID,
                     message: message
                 });
@@ -169,7 +181,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 TIME_PER_TURN = newTime * 1000
             break
             
-            case 'changenumwords':
+            case 'changewords':
                 numberOfWords =  parseInt(command[1], 10)
 
                 //CHECK AUTH
