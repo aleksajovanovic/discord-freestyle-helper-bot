@@ -55,24 +55,24 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
 
             case 'help':
-            message = 
-            'ww print                                                                prints the participants in the cipher\n' +
-            'ww start                                                                starts the cipher\n' +
-            'ww stop                                                                stops the cipher\n' +
-            'ww pause                                                             pauses the cipher\n' +
-            'ww resume                                                          resumes the paused cipher with the current person with new words\n' +
-            'ww end                                                                 disbands the cipher\n' +
-            'ww join                                                                  join the cipher\n' +
-            'ww leave                                                               leave the cipher\n' +
-            'ww changetime <new time>                            changes the time per word to the new time\n' +
-            'ww changeword <new words per person>   change how many words each person gets\n' +
-            'ww save                                                                save your customizations\n' +
-            'ww showpresets                                                 show what your current customizations are\n'
-                
-            wordsworth.sendMessage({
-                    to: channelID,
-                    message: message
-                });
+                message = 
+                'ww print                                                                prints the participants in the cipher\n' +
+                'ww start                                                                starts the cipher\n' +
+                'ww stop                                                                stops the cipher\n' +
+                'ww pause                                                             pauses the cipher\n' +
+                'ww resume                                                          resumes the paused cipher with the current person with new words\n' +
+                'ww end                                                                 disbands the cipher\n' +
+                'ww join                                                                  join the cipher\n' +
+                'ww leave                                                               leave the cipher\n' +
+                'ww changetime <new time>                            changes the time per word to the new time\n' +
+                'ww changeword <new words per person>   change how many words each person gets\n' +
+                'ww save                                                                save your customizations\n' +
+                'ww showpresets                                                 show what your current customizations are\n'
+                    
+                wordsworth.sendMessage({
+                        to: channelID,
+                        message: message
+                    });
             break
 
             case 'print':
@@ -210,6 +210,10 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
             
             case 'showpresets':
+                sendMessage(channelID, 'TIME_PER_TURN=' + TIME_PER_TURN / 1000 + '\n' + 'WORDS_PER_PERSON=' + WORDS_PER_PERSON + '\n' + 'GAMETYPE=' + gametype + '\n')
+            break
+            
+            case 'auth':
                 showPresets(channelID)
             break
             
@@ -238,29 +242,29 @@ const updater =  (() => {
         nextWords = generateFiveWords()
         currentParticipant = _currentParticipant === null ? cipher.next().user : _currentParticipant
 
-        announcePreparation(channelID, currentParticipant, currentWords[index])
+        sendMessage(channelID, currentParticipant + ', your first word will be\n' + currentWords[index] + '\nStart rapping when I say so.' + '\n------------------')
 
         timer = setInterval(async () => {
             if (timer !== null) {
 
                 if (index === 0) {
-                    announceParticipant(channelID, currentParticipant, currentWords[0])
+                    sendMessage(channelID, currentParticipant + ', your word was ' + currentWords[0] + '. Go!')
                 }
                 else if (index === (WORDS_PER_PERSON -1)) {
-                    announceLastWord(channelID, currentWords[index])
+                    sendMessage(channelID, currentWords[index] + '\n------------------')
 
                     await sleep(1000)
 
                     currentParticipant = cipher.next().user
                     
-                    announcePreparation(channelID, currentParticipant, nextWords[0])
+                    sendMessage(channelID, currentParticipant + ', your first word will be\n' + nextWords[0] + '\nStart rapping when I say so.' + '\n------------------')
 
                     currentWords = nextWords
                     nextWords = generateFiveWords()
                     index = -1
                 }
                 else {
-                    announceWord(channelID, currentWords[index])
+                    sendMessage(channelID, currentWords[index])
                 }
 
                 index++
@@ -278,7 +282,7 @@ const updater =  (() => {
     let pause = async (channelID) => {
         if (paused === false) {
             paused = true
-            announcePause(channelID)
+            sendMessage(channelID, 'The cipher has been paused...')
             clearInterval(timer)
             timer = null
             index = 0
@@ -333,38 +337,10 @@ async function showPresets(channelID) {
     });
 }
 
-async function announceParticipant(channelID, user, word) {
+async function sendMessage(channelID, msg) {
     wordsworth.sendMessage({
         to: channelID,
-        message: user + ', your word was ' + word + '. Go!'
-    });
-}
-
-async function announcePreparation(channelID, user, word) {
-    wordsworth.sendMessage({
-        to: channelID,
-        message: user + ', your first word will be\n' + word + '\nStart rapping when I say so.' + '\n------------------'
-    });
-}
-
-async function announceWord(channelID, word) {
-    wordsworth.sendMessage({
-        to: channelID,
-        message: word
-    });
-}
-
-async function announceLastWord(channelID, word) {
-    wordsworth.sendMessage({
-        to: channelID,
-        message: word + '\n------------------'
-    });
-}
-
-async function announcePause(channelID) {
-    wordsworth.sendMessage({
-        to: channelID,
-        message: 'The cipher has been paused...'
+        message: msg
     });
 }
 
