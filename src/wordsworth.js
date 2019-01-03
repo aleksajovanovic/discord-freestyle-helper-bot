@@ -8,7 +8,7 @@ require('dotenv').config();
 var cipher = new CircularList()
 var cipherIndexes = []
 
-var authorizedUsers = []
+var authorizedUsers = process.env.AUTHORIZED_USERS === 'null' ? [] : process.env.AUTHORIZED_USERS
 var password = process.env.PASSWORD === 'null' ? null : process.env.PASSWORD
 
 var TIME_PER_TURN = process.env.TIME_PER_TURN === 'null' ? 4000 : process.env.TIME_PER_TURN
@@ -216,7 +216,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
             
             case 'auth':
-                auth(userID, command[1])
+                auth(userID, command[1], channelID)
             break
             
             case 'end': 
@@ -311,7 +311,7 @@ const updater =  (() => {
     }
 })()
 
-async function auth(userID, _password) {
+async function auth(userID, _password, channelID) {
     hashedPass = crypto.createHash('sha256').update(_password, 'utf8').digest()
 
     if (password === null) {
@@ -334,16 +334,19 @@ async function auth(userID, _password) {
         password = hashedPass
         authorizedUsers.push(userID)
         authorizedUsersString = authorizedUsers.join(',')
-        console.log(authorizedUsersString)
+
         persistAuthUsers(authorizedUsersString)
+        sendMessage(channelID, 'Your authorization password has been set.')
 
         return
     }
 
-    if (password === hashedPass) {
+    if (password === hashedPass && !authorizedUsers.includes(userID)) {
         authorizedUsers.push(userID)
         authorizedUsersString = authorizedUsers.join(',')
+
         persistAuthUsers(authorizedUsersString)
+        sendMessage(channelID, 'You have been authorized.')
     }
 }
 
