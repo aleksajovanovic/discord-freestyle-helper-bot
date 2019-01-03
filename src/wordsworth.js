@@ -14,6 +14,8 @@ var password = process.env.PASSWORD === 'null' ? null : process.env.PASSWORD
 var TIME_PER_TURN = process.env.TIME_PER_TURN === 'null' ? 4000 : process.env.TIME_PER_TURN
 var WORDS_PER_PERSON = process.env.WORDS_PER_PERSON === 'null' ? 5 : process.env.WORDS_PER_PERSON
 
+const MS_IN_SEC = 1000
+
 const gametypes = {
     NORMAL: 'normal',
     ALLITERATION: 'alliteration'
@@ -50,10 +52,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
 
         switch (command[0]) { 
             case 'helenasayshi':
-                wordsworth.sendMessage({
-                    to: channelID,
-                    message: '>:)'
-                });
+                sendMessage(channelID, '>:)')
             break
 
             case 'help':
@@ -70,26 +69,12 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 ' ww changeword <new words per person>   change how many words each person gets\n' +
                 ' ww save                                                                save your customizations\n' +
                 ' ww showpresets                                                 show what your current customizations are\n'
-                    
-                wordsworth.sendMessage({
-                        to: channelID,
-                        message: message
-                    });
+                
+                sendMessage(channelID, message)
             break
 
             case 'print':
-                var listAsString = ''
-                var index = 0
-                while (index < cipher.size) {
-                    var dataUser = cipher.get(index)['user']
-                    listAsString += dataUser + ', '
-                    index++
-                }
-
-                wordsworth.sendMessage({
-                    to: channelID,
-                    message: listAsString
-                });
+                print(channelID)
             break
 
             case 'push':
@@ -123,96 +108,36 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
 
             case 'join':
-                var user = {'user': user, 'userID': userID, 'index': cipher.size}
-                userId = user['userID']
-
-                if (cipher.exists(user)) {
-                    wordsworth.sendMessage({
-                        to: channelID,
-                        message: user.user + ', you are already in the cipher'
-                    });
-                    break
-                }
-
-                cipher.push(user)
-                cipherIndexes[userID] = cipher.size - 1
-
-                wordsworth.sendMessage({
-                    to: channelID,
-                    message: user.user + ', your position in the cipher is ' + cipher.size
-                });
+                join(user, userID)
             break
 
             case 'leave':
-                var user = {'user': user, 'userID': userID, 'index': cipher.size}
-                var reachedUserToRemove = false
-
-                for (var key in cipherIndexes) {
-                    if(reachedUserToRemove) {
-                        --cipherIndexes[key]
-                    }
-
-                    if(key === userID) {
-                        reachedUserToRemove = true
-                    }
-                }
-
-                var index = cipherIndexes[userID]
-                cipher.remove(index)
+                leave(user, userID)
             break
 
             case 'changetime':
-                newTime =  parseInt(command[1], 10)
-
-                //CHECK AUTH
-
-                if (isNaN(newTime) || newTime < 2 || newTime > 100) {
-                    wordsworth.sendMessage({
-                        to: channelID,
-                        message: 'The new time must be between 2 and 100 seconds'
-                    });
-
-                    break
-                }
-
-                wordsworth.sendMessage({
-                    to: channelID,
-                    message: 'The old time was ' + TIME_PER_TURN / 1000 + ' seconds per word. The new time is ' + newTime + ' seconds per word.'
-                });
-
-                TIME_PER_TURN = newTime * 1000
+                if (isAuth(userID))
+                    changeTime(channelID)
+                else
+                    sendMessage(channelID, 'Forbidden.')
             break
             
             case 'changewords':
-                numberOfWords =  parseInt(command[1], 10)
-
-                //CHECK AUTH
-
-                if (isNaN(numberOfWords) || numberOfWords < 1 || numberOfWords > 20) {
-                    wordsworth.sendMessage({
-                        to: channelID,
-                        message: 'The new number of words must be between 1 and 20 words'
-                    });
-
-                    break
-                }
-
-                numberOfWords = numberOfWords
-
-                wordsworth.sendMessage({
-                    to: channelID,
-                    message: 'The old words per person was ' + WORDS_PER_PERSON + '. The new words per person is ' + numberOfWords + '.'
-                });
-
-                WORDS_PER_PERSON = numberOfWords
+                if (isAuth(userID))
+                    changeWords(channelID)
+                else
+                    sendMessage(channelID, 'Forbidden.')
             break
             
             case 'save':
-                savePresets()
+                if (isAuth(userID))
+                    savePresets()
+                else
+                    sendMessage(channelID, 'Forbidden.')
             break
             
             case 'showpresets':
-                sendMessage(channelID, 'TIME_PER_TURN=' + TIME_PER_TURN / 1000 + '\n' + 'WORDS_PER_PERSON=' + WORDS_PER_PERSON + '\n' + 'GAMETYPE=' + gametype + '\n')
+                sendMessage(channelID, 'TIME_PER_TURN=' + TIME_PER_TURN / MS_IN_SEC + '\n' + 'WORDS_PER_PERSON=' + WORDS_PER_PERSON + '\n' + 'GAMETYPE=' + gametype + '\n')
             break
             
             case 'auth':
@@ -311,6 +236,81 @@ const updater =  (() => {
     }
 })()
 
+async function print(channelID) {
+    var listAsString = ''
+    var index = 0
+
+    while (index < cipher.size) {
+        var dataUser = cipher.get(index)['user']
+        listAsString += dataUser + ', '
+        index++
+    }
+
+    sendMessage(channelID, listAsString)
+}
+
+async function join(user, userID) {
+    var user = {'user': user, 'userID': userID, 'index': cipher.size}
+    userId = user['userID']
+
+    if (cipher.exists(user)) {
+        sendMessage(channelID, user.user + ', you are already in the cipher')
+
+        break
+    }
+
+    cipher.push(user)
+    cipherIndexes[userID] = cipher.size - 1
+
+    sendMessage(channelID, user.user + ', your position in the cipher is ' + cipher.size)
+}
+
+function leave(user, userID) {
+    var user = {'user': user, 'userID': userID, 'index': cipher.size}
+    var reachedUserToRemove = false
+
+    for (var key in cipherIndexes) {
+        if(reachedUserToRemove) {
+            --cipherIndexes[key]
+        }
+
+        if(key === userID) {
+            reachedUserToRemove = true
+        }
+    }
+
+    var index = cipherIndexes[userID]
+    cipher.remove(index)
+}
+
+async function changeTime(channelID) {
+    var newTime =  parseInt(command[1], 10)
+
+    if (isNaN(newTime) || newTime < 2 || newTime > 100) {
+        sendMessage(channelID, 'The new time must be between 2 and 100 seconds')
+       
+        break
+    }
+
+    sendMessage(channelID, 'The old time was ' + TIME_PER_TURN / MS_IN_SEC + ' seconds per word. The new time is ' + newTime + ' seconds per word.')
+
+    TIME_PER_TURN = newTime * MS_IN_SEC
+}
+
+async function changeWords(channelID) {
+    var numberOfWords =  parseInt(command[1], 10)
+
+    if (isNaN(numberOfWords) || numberOfWords < 1 || numberOfWords > 20) {
+        sendMessage(channelID, 'The new number of words must be between 1 and 20 words')
+
+        break
+    }
+
+    sendMessage(channelID, 'The old words per person was ' + WORDS_PER_PERSON + '. The new words per person is ' + numberOfWords + '.')
+
+    WORDS_PER_PERSON = numberOfWords
+}
+
 async function auth(userID, _password, channelID) {
     hashedPass = crypto.createHash('sha256').update(_password, 'utf8').digest()
 
@@ -391,13 +391,6 @@ async function savePresets() {
         });
 }
 
-async function showPresets(channelID) {
-    wordsworth.sendMessage({
-        to: channelID,
-        message: 'TIME_PER_TURN=' + TIME_PER_TURN + '\n' + 'WORDS_PER_PERSON=' + WORDS_PER_PERSON + '\n' + 'GAMETYPE=' + gametype + '\n'
-    });
-}
-
 async function sendMessage(channelID, msg) {
     wordsworth.sendMessage({
         to: channelID,
@@ -423,25 +416,16 @@ function generateFiveWords() {
 }
 
 async function countdownCipher(channelID, msg) {
-    wordsworth.sendMessage({
-        to: channelID,
-        message: msg
-    });
+    sendMessage(channelID, msg)
     await sleep(1000)
-    wordsworth.sendMessage({
-        to: channelID,
-        message: "3"
-    });
+
+    sendMessage(channelID, '3')
     await sleep(1000)
-    wordsworth.sendMessage({
-        to: channelID,
-        message: "2"
-    });
+
+    sendMessage(channelID, '2')
     await sleep(1000)
-    wordsworth.sendMessage({
-        to: channelID,
-        message: "1\n------------------"
-    });
+
+    sendMessage(channelID, '1\n------------------')
     await sleep(1000)
 }
 
