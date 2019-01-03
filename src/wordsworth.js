@@ -1,5 +1,6 @@
 const words = require('an-array-of-english-words')
 const replace = require('replace-in-file');
+const crypto = require('crypto');
 var Discord = require('discord.io')
 var CircularList = require('../lib/circularlist')
 require('dotenv').config();
@@ -8,6 +9,7 @@ var cipher = new CircularList()
 var cipherIndexes = []
 
 var authorizedUsers = []
+var password = process.env.PASSWORD === 'null' ? null : process.env.PASSWORD
 
 var TIME_PER_TURN = process.env.TIME_PER_TURN === 'null' ? 4000 : process.env.TIME_PER_TURN
 var WORDS_PER_PERSON = process.env.WORDS_PER_PERSON === 'null' ? 5 : process.env.WORDS_PER_PERSON
@@ -47,27 +49,27 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
         var command = message.substring(3).split(" ")
 
         switch (command[0]) { 
-            case 'helena says hi':
+            case 'helenasayshi':
                 wordsworth.sendMessage({
                     to: channelID,
-                    message: ">:)"
+                    message: '>:)'
                 });
             break
 
             case 'help':
                 message = 
-                'ww print                                                                prints the participants in the cipher\n' +
-                'ww start                                                                starts the cipher\n' +
-                'ww stop                                                                stops the cipher\n' +
-                'ww pause                                                             pauses the cipher\n' +
-                'ww resume                                                          resumes the paused cipher with the current person with new words\n' +
-                'ww end                                                                 disbands the cipher\n' +
-                'ww join                                                                  join the cipher\n' +
-                'ww leave                                                               leave the cipher\n' +
-                'ww changetime <new time>                            changes the time per word to the new time\n' +
-                'ww changeword <new words per person>   change how many words each person gets\n' +
-                'ww save                                                                save your customizations\n' +
-                'ww showpresets                                                 show what your current customizations are\n'
+                ' ww print                                                                prints the participants in the cipher\n' +
+                ' ww start                                                                starts the cipher\n' +
+                ' ww stop                                                                stops the cipher\n' +
+                ' ww pause                                                             pauses the cipher\n' +
+                ' ww resume                                                          resumes the paused cipher with the current person with new words\n' +
+                ' ww end                                                                 disbands the cipher\n' +
+                ' ww join                                                                  join the cipher\n' +
+                ' ww leave                                                               leave the cipher\n' +
+                ' ww changetime <new time>                            changes the time per word to the new time\n' +
+                ' ww changeword <new words per person>   change how many words each person gets\n' +
+                ' ww save                                                                save your customizations\n' +
+                ' ww showpresets                                                 show what your current customizations are\n'
                     
                 wordsworth.sendMessage({
                         to: channelID,
@@ -214,7 +216,7 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
             
             case 'auth':
-                showPresets(channelID)
+                auth(userID, command[1])
             break
             
             case 'end': 
@@ -309,6 +311,37 @@ const updater =  (() => {
     }
 })()
 
+async function auth(userID, _password) {
+    hashedPass = crypto.createHash('sha256').update(_password, 'utf8').digest()
+
+    if (password === null) {
+        const options = {
+
+            files: './.env',
+          
+            from: /PASSWORD=null/,
+            to: 'PASSWORD=' + hashedPass,
+          };
+    
+        replace(options)
+            .catch(error => {
+                console.error('Error occurred:', error);
+            });
+
+        authorizedUsers.push(userID)
+
+        return
+    }
+
+    if (password === hashedPass) {
+        authorizedUsers.push(userID)
+    }
+}
+
+function isAuth(userID, password) {
+    return authorizedUsers.includes(userID)
+}
+
 async function savePresets() {
     var timeReplace = 'TIME_PER_TURN=' + TIME_PER_TURN
     var wordReplace = 'WORDS_PER_PERSON=' + WORDS_PER_PERSON
@@ -320,7 +353,7 @@ async function savePresets() {
         files: './.env',
       
         //Replacement to make (string or regex) 
-        from: [/TIME_PER_TURN=[null|0-9]*/, /WORDS_PER_PERSON=[null|0-9]*/, /GAMETYPE=[null|0-9]*/],
+        from: [/TIME_PER_TURN=[null|0-9]*/, /WORDS_PER_PERSON=[null|0-9]*/, /GAMETYPE=[null|a-z]*/],
         to: [timeReplace, wordReplace, gameReplace],
       };
 
