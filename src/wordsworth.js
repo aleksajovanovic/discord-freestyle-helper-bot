@@ -327,19 +327,44 @@ async function auth(userID, _password) {
             .catch(error => {
                 console.error('Error occurred:', error);
             });
-
+        
+        // prevent race condition 
+        await sleep(500)
+        
+        password = hashedPass
         authorizedUsers.push(userID)
+        authorizedUsersString = authorizedUsers.join(',')
+        console.log(authorizedUsersString)
+        persistAuthUsers(authorizedUsersString)
 
         return
     }
 
     if (password === hashedPass) {
         authorizedUsers.push(userID)
+        authorizedUsersString = authorizedUsers.join(',')
+        persistAuthUsers(authorizedUsersString)
     }
 }
 
 function isAuth(userID, password) {
     return authorizedUsers.includes(userID)
+}
+
+function persistAuthUsers(authorizedUsersString) {
+    console.log(authorizedUsersString)
+    const options = {
+
+        files: './.env',
+      
+        from: /AUTHORIZED_USERS=null/,
+        to: 'AUTHORIZED_USERS=' + authorizedUsersString,
+      };
+
+    replace(options)
+        .catch(error => {
+            console.error('Error occurred:', error);
+        });
 }
 
 async function savePresets() {
