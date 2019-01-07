@@ -67,8 +67,10 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 ' ww leave                                                               leave the cipher\n' +
                 ' ww changetime <new time>                            changes the time per word to the new time\n' +
                 ' ww changeword <new words per person>   change how many words each person gets\n' +
+                ' ww changegame <gametype>                         change the gametype. Possible types are normal and alliteration\n' +
                 ' ww save                                                                save your customizations\n' +
-                ' ww showpresets                                                 show what your current customizations are\n'
+                ' ww showpresets                                                 show what your current customizations are\n' +
+                ' ww auth <password>                                         authenticate yourself or set password\n'
                 
                 sendMessage(channelID, message)
             break
@@ -116,17 +118,44 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
 
             case 'changetime':
-                if (isAuth(userID))
-                    changeTime(channelID)
-                else
+                if (isAuth(userID)) {
+                    try {
+                        var value = parseInt(command[1], 10)
+                        changeTime(channelID, value)
+                    } catch (e) {
+                        sendMessage(channelID, 'you must provide a value')
+                    }
+                }
+                else {
                     sendMessage(channelID, 'Forbidden.')
+                }
             break
             
             case 'changewords':
-                if (isAuth(userID))
-                    changeWords(channelID)
-                else
+                if (isAuth(userID)) {
+                    try {
+                        var value = parseInt(command[1], 10)
+                        changeWords(channelID, value)
+                    } catch (e) {
+                        sendMessage(channelID, 'you must provide a value')
+                    }
+                }
+                else {
                     sendMessage(channelID, 'Forbidden.')
+                }
+            break
+
+            case 'changegame':
+                if (isAuth(userID)) {
+                    try {
+                        changeGame(channelID, command[1])
+                    } catch (e) {
+                        sendMessage(channelID, 'you must provide a value')
+                    }
+                }
+                else {
+                    sendMessage(channelID, 'Forbidden.')
+                }
             break
             
             case 'save':
@@ -141,7 +170,11 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             break
             
             case 'auth':
-                auth(userID, command[1], channelID)
+                try {
+                    auth(userID, command[1], channelID)
+                } catch (e) {
+                    sendMessage(channelID, 'you must provide a value')
+                }
             break
             
             case 'end': 
@@ -165,8 +198,8 @@ const updater =  (() => {
     var paused = false
 
     let update = (channelID, _currentParticipant = null) => {
-        currentWords = generateFiveWords()
-        nextWords = generateFiveWords()
+        currentWords = gametype === gametypes.NORMAL ? generateFiveWords() : generateFiveAlliterativeWords()
+        nextWords = gametype === gametypes.NORMAL ? generateFiveWords() : generateFiveAlliterativeWords()
         currentParticipant = _currentParticipant === null ? cipher.next().user : _currentParticipant
 
         sendMessage(channelID, currentParticipant + ', your first word will be\n' + currentWords[index] + '\nStart rapping when I say so.' + '\n------------------')
@@ -187,7 +220,7 @@ const updater =  (() => {
                     sendMessage(channelID, currentParticipant + ', your first word will be\n' + nextWords[0] + '\nStart rapping when I say so.' + '\n------------------')
 
                     currentWords = nextWords
-                    nextWords = generateFiveWords()
+                    nextWords = gametype === gametypes.NORMAL ? generateFiveWords() : generateFiveAlliterativeWords()
                     index = -1
                 }
                 else {
@@ -283,13 +316,11 @@ function leave(user, userID) {
     cipher.remove(index)
 }
 
-async function changeTime(channelID) {
-    var newTime =  parseInt(command[1], 10)
-
+async function changeTime(channelID, newTime) {
     if (isNaN(newTime) || newTime < 2 || newTime > 100) {
         sendMessage(channelID, 'The new time must be between 2 and 100 seconds')
        
-        break
+        return
     }
 
     sendMessage(channelID, 'The old time was ' + TIME_PER_TURN / MS_IN_SEC + ' seconds per word. The new time is ' + newTime + ' seconds per word.')
@@ -297,18 +328,37 @@ async function changeTime(channelID) {
     TIME_PER_TURN = newTime * MS_IN_SEC
 }
 
-async function changeWords(channelID) {
-    var numberOfWords =  parseInt(command[1], 10)
-
+async function changeWords(channelID, numberOfWords) {
     if (isNaN(numberOfWords) || numberOfWords < 1 || numberOfWords > 20) {
         sendMessage(channelID, 'The new number of words must be between 1 and 20 words')
 
-        break
+        return
     }
 
     sendMessage(channelID, 'The old words per person was ' + WORDS_PER_PERSON + '. The new words per person is ' + numberOfWords + '.')
 
     WORDS_PER_PERSON = numberOfWords
+}
+
+async function changeGame(channelID, newGameType) {
+    var oldGame = gametype
+
+    switch (newGameType) {
+        case 'normal':
+            gametype = gametypes.NORMAL
+        break
+
+        case 'alliteration':
+            gametype = gametypes.ALLITERATION
+        break
+
+        default:
+            sendMessage(channelID, 'The new game type can only be normal, alliteration')
+            return
+        break
+    }
+
+    sendMessage(channelID, 'The old game type was ' + oldGame + '. The new game type is ' + gametype + '.')
 }
 
 async function auth(userID, _password, channelID) {
@@ -350,7 +400,7 @@ async function auth(userID, _password, channelID) {
     }
 }
 
-function isAuth(userID, password) {
+function isAuth(userID) {
     return authorizedUsers.includes(userID)
 }
 
@@ -408,6 +458,25 @@ function generateFiveWords() {
             rand = Math.floor(Math.random() * (words.length))
         } 
         while (fiveWords.includes(words[rand]))
+
+        fiveWords.push(words[rand].toUpperCase())
+    }
+
+    return fiveWords
+}
+
+function generateFiveAlliterativeWords() {
+    var fiveWords = []
+    var letters = 'abcdefghijklmnopqrstuvwxyz'
+    var startingLetter = letters.charAt(Math.floor(Math.random() * (letters.length)))
+
+    for (var i = 0; i < WORDS_PER_PERSON; i++) {
+        var rand
+
+        do {
+            rand = Math.floor(Math.random() * (words.length))
+        } 
+        while (fiveWords.includes(words[rand]) || words[rand].charAt(0) !== startingLetter)
 
         fiveWords.push(words[rand].toUpperCase())
     }
