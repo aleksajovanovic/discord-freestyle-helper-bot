@@ -10,9 +10,10 @@ var cipherIndexes = []
 
 var authorizedUsers = process.env.AUTHORIZED_USERS === 'null' ? [] : process.env.AUTHORIZED_USERS
 var password = process.env.PASSWORD === 'null' ? null : process.env.PASSWORD
-
 var TIME_PER_TURN = process.env.TIME_PER_TURN === 'null' ? 4000 : process.env.TIME_PER_TURN
 var WORDS_PER_PERSON = process.env.WORDS_PER_PERSON === 'null' ? 5 : process.env.WORDS_PER_PERSON
+var CIPHER_CHANNEL_ID = process.env.CIPHER_CHANNEL_ID === 'null' ? null : process.env.CIPHER_CHANNEL_ID
+var CHANNEL_ID = process.env.CHANNEL_ID === 'null' ? null : process.env.CHANNEL_ID
 
 const MS_IN_SEC = 1000
 
@@ -47,7 +48,13 @@ wordsworth.on('ready', () => {
 });
 
 wordsworth.on('message', async (user, userID, channelID, message, event) => {
-    if (message.substring(0,3) === 'ww ') {
+    if (CIPHER_CHANNEL_ID === null)
+        CIPHER_CHANNEL_ID = channelID
+
+    if (CHANNEL_ID === null)
+        CHANNEL_ID = channelID
+
+    if (message.substring(0,3) === 'ww ' && channelID == CHANNEL_ID) {
         var command = message.substring(3).split(" ")
 
         switch (command[0]) { 
@@ -57,20 +64,22 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
 
             case 'help':
                 message = 
+                ' ----REGULAR CHANNEL COMMANDS----\n' +
                 ' ww print                                                                prints the participants in the cipher\n' +
+                ' ww join                                                                  join the cipher\n' +
+                ' ww leave                                                               leave the cipher\n' +
+                ' ww auth <password>                                         authenticate yourself or set password\n' +
+                ' ----CIPHER CHANNEL COMMANDS----\n' +
                 ' ww start                                                                starts the cipher\n' +
                 ' ww stop                                                                stops the cipher\n' +
                 ' ww pause                                                             pauses the cipher\n' +
                 ' ww resume                                                          resumes the paused cipher with the current person with new words\n' +
                 ' ww end                                                                 disbands the cipher\n' +
-                ' ww join                                                                  join the cipher\n' +
-                ' ww leave                                                               leave the cipher\n' +
                 ' ww changetime <new time>                            changes the time per word to the new time\n' +
                 ' ww changeword <new words per person>   change how many words each person gets\n' +
                 ' ww changegame <gametype>                         change the gametype. Possible types are normal and alliteration\n' +
                 ' ww save                                                                save your customizations\n' +
-                ' ww showpresets                                                 show what your current customizations are\n' +
-                ' ww auth <password>                                         authenticate yourself or set password\n'
+                ' ww showpresets                                                 show what your current customizations are\n'
                 
                 sendMessage(channelID, message)
             break
@@ -79,20 +88,42 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
                 print(channelID)
             break
 
-            case 'push':
-                user1 = {'user': 'bob', 'userID': '1', 'index': 0}
-                user2 = {'user': 'daryl', 'userID': '2', 'index': 1}
-                user3 = {'user': 'craig', 'userID': '3', 'index': 2}
-                user4 = {'user': 'kimberley', 'userID': '4', 'index': 3}
-                user5 = {'user': 'juan', 'userID': '5', 'index': 4}
+            // case 'push':
+            //     user1 = {'user': 'bob', 'userID': '1', 'index': 0}
+            //     user2 = {'user': 'daryl', 'userID': '2', 'index': 1}
+            //     user3 = {'user': 'craig', 'userID': '3', 'index': 2}
+            //     user4 = {'user': 'kimberley', 'userID': '4', 'index': 3}
+            //     user5 = {'user': 'juan', 'userID': '5', 'index': 4}
 
-                cipher.push(user1)
-                cipher.push(user2)
-                cipher.push(user3)
-                cipher.push(user4)
-                cipher.push(user5)
+            //     cipher.push(user1)
+            //     cipher.push(user2)
+            //     cipher.push(user3)
+            //     cipher.push(user4)
+            //     cipher.push(user5)
+            // break
+
+            case 'join':
+                join(user, userID)
             break
 
+            case 'leave':
+                leave(user, userID)
+            break
+            
+            case 'auth':
+                try {
+                    auth(userID, command[1], channelID)
+                } catch (e) {
+                    sendMessage(channelID, 'you must provide a value')
+                }
+            break
+        }
+    }
+
+    if (message.substring(0,3) === 'ww ' && channelID == CIPHER_CHANNEL_ID) {
+        var command = message.substring(3).split(" ")
+
+        switch (command[0]) { 
             case 'start': 
                 updater.start(channelID)
             break
@@ -107,14 +138,6 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             
             case 'stop':
                 updater.stop()
-            break
-
-            case 'join':
-                join(user, userID)
-            break
-
-            case 'leave':
-                leave(user, userID)
             break
 
             case 'changetime':
@@ -167,14 +190,6 @@ wordsworth.on('message', async (user, userID, channelID, message, event) => {
             
             case 'showpresets':
                 sendMessage(channelID, 'TIME_PER_TURN=' + TIME_PER_TURN / MS_IN_SEC + '\n' + 'WORDS_PER_PERSON=' + WORDS_PER_PERSON + '\n' + 'GAMETYPE=' + gametype + '\n')
-            break
-            
-            case 'auth':
-                try {
-                    auth(userID, command[1], channelID)
-                } catch (e) {
-                    sendMessage(channelID, 'you must provide a value')
-                }
             break
             
             case 'end': 
